@@ -1,0 +1,673 @@
+<!-- Chosen Palette: Vibrant Tech (Electric Blue #2563EB, Vibrant Orange #F97316, Emerald #10B981, Rose #F43F5E, Slate #F8FAFC) -->
+<!-- Application Structure Plan: SPA with 2 main views. View 1 (Home) acts as the executive dashboard showing the framework and ROI charts. View 2 (Form) is the operational data entry form for Data Owners to inventory their tables, with auto-mapping logic to ensure compliance. Navigation is handled via JS toggling CSS classes. -->
+<!-- Visualization & Content Choices: Inform -> HTML/CSS Cards for Frameworks. Compare -> Chart.js Stacked Bar for Storage ROI. Composition -> Chart.js Doughnut for Action Distribution. Organize -> HTML Form for Data Entry connected to Google Sheets. NO SVG used. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดเก็บข้อมูลองค์กร (Data Retention System)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #F8FAFC;
+            color: #1E293B;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        .nav-active {
+            border-bottom: 3px solid #2563EB;
+            color: #2563EB;
+            font-weight: 700;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .table-row {
+            transition: all 0.3s ease;
+        }
+        .table-row:hover {
+            border-color: #2563EB;
+        }
+        .recall-section {
+            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+            border: 1px dashed #2563EB;
+        }
+    </style>
+</head>
+<body class="antialiased pb-20">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">💾</span>
+                    <span class="font-bold text-xl text-slate-800">Data Retention System</span>
+                </div>
+                <div class="flex space-x-6">
+                    <button onclick="switchPage('page-home', this)" class="nav-btn nav-active text-slate-600 hover:text-blue-600 px-2 py-4 transition-colors">🏠 หน้าหลัก (Dashboard)</button>
+                    <button onclick="switchPage('page-form', this)" class="nav-btn text-slate-600 hover:text-blue-600 px-2 py-4 transition-colors">📝 กรอกฟอร์มสำรวจ</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- PAGE 1: HOME (Dashboard) -->
+    <div id="page-home" class="fade-in block">
+        <header class="bg-blue-600 text-white pt-12 pb-20 px-6 relative overflow-hidden">
+            <div class="max-w-5xl mx-auto relative z-10 text-center">
+                <h1 class="text-3xl md:text-4xl font-bold mb-4 leading-tight">แก้ปัญหาระบบล่ม คืนพื้นที่ Storage<br><span class="text-orange-400">ด้วย Data Retention Policy</span></h1>
+                <p class="text-lg font-light text-blue-100 max-w-2xl mx-auto">ทางออกที่ไม่ต้องซื้อเซิร์ฟเวอร์ใหม่ทุกปี แต่ใช้การจัดการข้อมูลอย่างเป็นระบบ ถูกกฎหมาย และประหยัดงบประมาณ</p>
+            </div>
+            <div class="absolute top-0 left-0 w-full h-full opacity-10 text-8xl pointer-events-none flex justify-around items-center">
+                <span>📊</span><span>🔒</span>
+            </div>
+        </header>
+
+        <main class="max-w-5xl mx-auto px-6 -mt-10 relative z-20 space-y-12">
+            
+            <!-- Quick Definitions -->
+            <section class="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+                <div class="flex items-center mb-4">
+                    <span class="text-2xl mr-2">📖</span>
+                    <h2 class="text-xl font-bold text-slate-800">ปูพื้นฐาน: ทำความเข้าใจ 5 กรอบกฎหมายสำคัญ</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600">
+                    <div class="bg-slate-50 p-3 rounded">
+                        <strong class="text-blue-700">1. PDPA (พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล):</strong> กฎหมายที่บังคับให้เราดูแลข้อมูลลูกค้า/พนักงาน หากหมดความจำเป็นต้องทำลายหรือทำให้ระบุตัวตนไม่ได้
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded">
+                        <strong class="text-amber-700">2. กฎหมายบัญชี/ภาษี:</strong> บังคับให้เก็บเอกสารการเงินต่างๆ ไว้เพื่อรอการตรวจสอบจากสรรพากรหรือ สตง.
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded">
+                        <strong class="text-rose-700">3. พ.ร.บ. คอมพิวเตอร์:</strong> บังคับให้เก็บข้อมูลการจราจรทางคอมพิวเตอร์ (Log) เพื่อสืบสวนหาผู้กระทำผิด
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded">
+                        <strong class="text-emerald-700">4. Business Need:</strong> ความจำเป็นในการดำเนินงานของบริษัท เช่น สถิติการใช้ไฟ เพื่อใช้พยากรณ์ล่วงหน้า
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded md:col-span-2">
+                        <strong class="text-purple-700">5. กฎหมายสัญญา:</strong> อายุความของคดีแพ่งที่เกี่ยวข้องกับสัญญาต่างๆ เผื่อมีการฟ้องร้องในอนาคต
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5 Frameworks Cards -->
+            <section>
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-2">5 หมวดหมู่ข้อมูล และ นโยบายการจัดเก็บ</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl p-6 shadow-sm border-t-4 border-blue-500 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-3xl">👤</span>
+                            <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">PDPA</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">ข้อมูลส่วนบุคคล</h3>
+                        <div class="bg-slate-50 p-3 rounded text-sm flex-grow">
+                            <p class="font-semibold text-slate-700 mb-1">อายุจัดเก็บ: 10 ปี (รอหมดอายุความคดีแพ่ง)</p>
+                            <p class="text-slate-600">เมื่อครบกำหนด: <span class="text-blue-600 font-bold">ทำข้อมูลนิรนาม (Anonymize)</span> ลบชื่อออกแต่นำตัวเลขไปวิเคราะห์ต่อได้</p>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border-t-4 border-amber-500 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-3xl">💰</span>
+                            <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded">กฎหมายบัญชี</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">ข้อมูลการเงิน/บัญชี</h3>
+                        <div class="bg-slate-50 p-3 rounded text-sm flex-grow">
+                            <p class="font-semibold text-slate-700 mb-1">อายุจัดเก็บ: 5 - 10 ปี (ตามสรรพากร/สตง.)</p>
+                            <p class="text-slate-600">เมื่อครบกำหนด: <span class="text-amber-600 font-bold">ย้ายไป Archive</span> ที่ราคาถูกกว่า ไม่เปลืองพื้นที่เซิร์ฟเวอร์หลัก</p>
+                        </div>
+                    </div>
+                    <!-- Card 3 -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border-t-4 border-emerald-500 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-3xl">⚙️</span>
+                            <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded">Business Need</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">ข้อมูลการดำเนินงาน</h3>
+                        <div class="bg-slate-50 p-3 rounded text-sm flex-grow">
+                            <p class="font-semibold text-slate-700 mb-1">อายุจัดเก็บ: ตลอดการใช้งาน (Active + 5 ปี)</p>
+                            <p class="text-slate-600">เมื่อครบกำหนด: <span class="text-emerald-600 font-bold">ทำลายทิ้ง หรือ ย้ายไป Archive</span> หากจำเป็น</p>
+                        </div>
+                    </div>
+                    <!-- Card 4 -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border-t-4 border-rose-500 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-3xl">💻</span>
+                            <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded">พ.ร.บ.คอมฯ</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">IT Logs & CCTV</h3>
+                        <div class="bg-slate-50 p-3 rounded text-sm flex-grow">
+                            <p class="font-semibold text-slate-700 mb-1">อายุจัดเก็บ: 90 วัน (ขั้นต่ำตามกฎหมาย)</p>
+                            <p class="text-slate-600">เมื่อครบกำหนด: <span class="text-rose-600 font-bold">ลบอัตโนมัติ (Auto Delete)</span> ช่วยคืนพื้นที่ได้มหาศาล</p>
+                        </div>
+                    </div>
+                    <!-- Card 5 -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border-t-4 border-purple-500 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-3xl">⚖️</span>
+                            <span class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded">กฎหมายสัญญา</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">ข้อมูลสัญญา/คดี</h3>
+                        <div class="bg-slate-50 p-3 rounded text-sm flex-grow">
+                            <p class="font-semibold text-slate-700 mb-1">อายุจัดเก็บ: 10 ปี หลังสิ้นสุดสัญญา หรือ ถาวร</p>
+                            <p class="text-slate-600">เมื่อครบกำหนด: <span class="text-purple-600 font-bold">ย้ายเข้าหอจดหมายเหตุ</span> แบบถาวร</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ROI Charts -->
+            <section class="border-t border-slate-200 pt-10">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-2">ผลลัพธ์และความคุ้มค่า (Expected ROI)</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Bar Chart -->
+                    <div class="glass-card rounded-xl p-6 flex flex-col h-full">
+                        <h3 class="text-xl font-bold text-center mb-1 text-slate-700">พื้นที่จัดเก็บ ก่อนและหลัง นำนโยบายมาใช้</h3>
+                        <p class="text-center text-sm text-slate-500 mb-4">จำลองจากระบบความจุ 1,000 TB</p>
+                        <div class="chart-container flex-grow" style="min-height: 250px;">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                        <p class="text-center mt-4 text-sm text-slate-600">เราสามารถเรียกคืนพื้นที่ว่างได้มหาศาล ทำให้ระบบกลับมาลื่นไหล</p>
+                    </div>
+                    <!-- Donut Chart -->
+                    <div class="glass-card rounded-xl p-6 flex flex-col h-full">
+                        <h3 class="text-xl font-bold text-center mb-1 text-slate-700">สัดส่วนวิธีการจัดการข้อมูลที่หมดอายุ</h3>
+                        <p class="text-center text-sm text-slate-500 mb-4">กระจายความเสี่ยงและลดต้นทุน</p>
+                        <div class="chart-container flex-grow" style="min-height: 250px;">
+                            <canvas id="donutChart"></canvas>
+                        </div>
+                        <div class="mt-4 bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs text-slate-600">
+                            <span class="font-bold text-slate-800 text-sm">💡 วิธีการคำนวณสัดส่วน:</span>
+                            <div class="mt-2 p-2 bg-white rounded border border-slate-200 text-center font-mono text-blue-700 text-sm font-bold shadow-sm">
+                                ( พื้นที่ของแต่ละ Action / พื้นที่ข้อมูลหมดอายุทั้งหมด ) &times; 100 = %
+                            </div>
+                            <p class="mt-2 text-slate-500">นำ "ขนาดข้อมูล" ที่ส่งจากฟอร์มมาจัดกลุ่มตามวิธีจัดการ (Action) เพื่อดูสัดส่วนการดำเนินการภาพรวม</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- PAGE 2: FORM (Data Entry) -->
+    <div id="page-form" class="fade-in hidden">
+        <div class="bg-blue-600 pb-24 pt-10">
+            <div class="max-w-4xl mx-auto px-6 text-center text-white">
+                <h1 class="text-3xl font-bold mb-2">ฟอร์มสำรวจข้อมูล (Data Inventory Form)</h1>
+                <p class="text-blue-100">กรอกข้อมูลระดับตาราง ระบบจะจัดเก็บลง Google Sheets อัตโนมัติ</p>
+            </div>
+        </div>
+
+        <main class="max-w-4xl mx-auto px-6 -mt-16 relative z-20">
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden mb-10">
+                <!-- Recall Section -->
+                <div class="p-6 recall-section border-b border-slate-200">
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">🔍</span>
+                            <div>
+                                <h3 class="font-bold text-blue-800">ดึงข้อมูลเก่ามาแก้ไข</h3>
+                                <p class="text-xs text-blue-600">กรอก Submit Code เพื่อโหลดข้อมูลเดิม</p>
+                            </div>
+                        </div>
+                        <div class="flex w-full md:w-auto space-x-2">
+                            <input type="text" id="recallCode" placeholder="เช่น REQ-XXXXXX" class="flex-grow md:w-48 bg-white border border-blue-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <button onclick="recallData()" id="recallBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition">โหลดข้อมูล</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-8">
+                    <!-- Alert message placeholder -->
+                    <div id="formAlert" class="hidden mb-6 p-4 rounded-lg flex items-center">
+                        <span class="text-2xl mr-3" id="alertIcon"></span>
+                        <div>
+                            <h4 class="font-bold" id="alertTitle"></h4>
+                            <p class="text-sm" id="alertDesc"></p>
+                        </div>
+                    </div>
+
+                    <form id="inventoryForm" class="space-y-8">
+                        <!-- ส่วนที่ 1: ข้อมูลหลัก (Master Data) -->
+                        <div class="space-y-6">
+                            <div class="flex items-center space-x-2 border-b border-slate-100 pb-2">
+                                <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                                <h3 class="font-bold text-slate-800">ข้อมูลระบบและผู้รับผิดชอบ (System Info)</h3>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อระบบ / ฐานข้อมูล</label>
+                                    <input type="text" id="sysName" required placeholder="เช่น CRM_Production_DB" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">หน่วยงานผู้รับผิดชอบ (Data Owner)</label>
+                                    <input type="text" id="dataOwner" required placeholder="เช่น ฝ่ายบริการลูกค้า" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">ผู้มีอำนาจอนุมัติทำลายข้อมูล (Approver)</label>
+                                    <input type="text" id="approver" required placeholder="ระบุตำแหน่ง เช่น ผู้อำนวยการฝ่ายไอที" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 outline-none focus:border-blue-500 transition">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ส่วนที่ 2: ข้อมูลตาราง (Detail Data) -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                                    <h3 class="font-bold text-slate-800">รายการตารางข้อมูล (Table List)</h3>
+                                </div>
+                                <button type="button" onclick="addTableRow()" class="text-blue-600 hover:text-blue-700 text-sm font-bold flex items-center">
+                                    <span class="text-xl mr-1">+</span> เพิ่มตาราง
+                                </button>
+                            </div>
+
+                            <div id="tableContainer" class="space-y-4">
+                                <!-- Dynamic Rows will be injected here -->
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                                <div id="submitCodeDisplay" class="hidden bg-slate-100 px-4 py-2 rounded-lg border border-slate-200">
+                                    <span class="text-xs text-slate-500 block">Submit Code (สำหรับแก้ไข):</span>
+                                    <span id="currentCode" class="font-mono font-bold text-blue-700 text-lg"></span>
+                                </div>
+                                <div class="flex-grow"></div>
+                                <button type="submit" id="submitBtn" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-xl shadow-lg transition transform hover:-translate-y-1 flex items-center justify-center">
+                                    <span>💾 บันทึกข้อมูลทั้งหมด (Submit)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Table Row Template -->
+    <template id="tableRowTemplate">
+        <div class="table-row bg-slate-50 border border-slate-200 rounded-xl p-5 relative">
+            <button type="button" onclick="removeTableRow(this)" class="absolute -top-2 -right-2 bg-rose-500 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md hover:bg-rose-600 transition">×</button>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-blue-700 mb-1">ชื่อตาราง (Table Name)</label>
+                    <input type="text" name="tableName" required placeholder="เช่น tb_customer" class="w-full bg-white border border-slate-300 rounded p-2 text-sm focus:border-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-blue-700 mb-1">ขนาดพื้นที่ (GB)</label>
+                    <input type="number" step="0.01" name="tableSize" required placeholder="เช่น 1.5" class="w-full bg-white border border-slate-300 rounded p-2 text-sm focus:border-blue-500 outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">วัตถุประสงค์ (Purpose)</label>
+                    <input type="text" name="purpose" required placeholder="เหตุผลที่ต้องจัดเก็บ" class="w-full bg-white border border-slate-300 rounded p-2 text-sm focus:border-blue-500 outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-orange-700 mb-1">ประเภทข้อมูล</label>
+                    <select name="category" required onchange="handleCategoryChange(this)" class="w-full bg-white border border-orange-200 rounded p-2 text-sm font-bold focus:border-orange-500 outline-none">
+                        <option value="">-- เลือกหมวดหมู่ --</option>
+                        <option value="PDPA">ข้อมูลส่วนบุคคล (PDPA)</option>
+                        <option value="Financial">ข้อมูลการเงินและบัญชี</option>
+                        <option value="Operational">ข้อมูลการดำเนินงาน (Business Need)</option>
+                        <option value="IT_Logs">ข้อมูลจราจรและระบบไอที (IT Logs/CCTV)</option>
+                        <option value="Legal">ข้อมูลสัญญาและคดี (Legal/Contracts)</option>
+                    </select>
+                </div>
+                <div class="bg-white p-2 rounded border border-slate-100 flex items-center space-x-2">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">Retention:</span>
+                    <input type="text" name="retention" readonly class="text-xs font-bold text-slate-700 w-full outline-none">
+                </div>
+                <div class="bg-white p-2 rounded border border-slate-100 flex items-center space-x-2">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">Action:</span>
+                    <input type="text" name="action" readonly class="text-xs font-bold text-slate-700 w-full outline-none">
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // --- Navigation Logic ---
+        function switchPage(pageId, btnElement) {
+            document.getElementById('page-home').classList.add('hidden');
+            document.getElementById('page-home').classList.remove('block');
+            document.getElementById('page-form').classList.add('hidden');
+            document.getElementById('page-form').classList.remove('block');
+            
+            document.getElementById(pageId).classList.remove('hidden');
+            document.getElementById(pageId).classList.add('block');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('nav-active'));
+            if(btnElement) btnElement.classList.add('nav-active');
+
+            if(pageId === 'page-home') initCharts();
+        }
+
+        // --- Chart.js Implementations ---
+        let storageChart, donutChart;
+
+        function wrapLabel(label, maxChars = 16) {
+            if (typeof label !== 'string' || label.length <= maxChars) return label;
+            const words = label.split(' ');
+            const lines = [];
+            let currentLine = '';
+            for (let word of words) {
+                if ((currentLine + word).length > maxChars && currentLine.length > 0) {
+                    lines.push(currentLine.trim());
+                    currentLine = word + ' ';
+                } else {
+                    currentLine += word + ' ';
+                }
+            }
+            if (currentLine.trim().length > 0) lines.push(currentLine.trim());
+            return lines;
+        }
+
+        const tooltipConfig = {
+            callbacks: {
+                title: function(tooltipItems) {
+                    const item = tooltipItems[0];
+                    let label = item.chart.data.labels[item.dataIndex];
+                    return Array.isArray(label) ? label.join(' ') : label;
+                }
+            }
+        };
+
+        function initCharts() {
+            // Bar Chart
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            if(storageChart) storageChart.destroy();
+            
+            storageChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['สถานการณ์ปัจจุบัน (Storage เต็ม)'.split(' '), 'หลังใช้นโยบาย Data Retention'.split(' ')],
+                    datasets: [
+                        { label: 'พื้นที่ใช้งานจริง (Active Data)', data: [1000, 450], backgroundColor: '#2563EB', borderRadius: 4 },
+                        { label: 'พื้นที่ว่างที่ได้คืนมา (Free Space)', data: [0, 550], backgroundColor: '#10B981', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 20, bottom: 10 } },
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, max: 1000, border: { dash: [4, 4] }, grid: { color: '#e2e8f0' } }
+                    },
+                    plugins: { tooltip: tooltipConfig, legend: { position: 'bottom', labels: { font: { family: "'Prompt', sans-serif" } } } }
+                }
+            });
+
+            // Donut Chart
+            const donutCtx = document.getElementById('donutChart').getContext('2d');
+            if(donutChart) donutChart.destroy();
+
+            const shortDonutLabels = ['ลบถาวร (Hard Delete)', 'ย้ายไป Archive', 'ทำข้อมูลนิรนาม (Anonymize)'];
+            const donutTooltips = ['IT Logs, สถิติเก่า', 'ข้อมูลบัญชี, เอกสารสัญญา', 'ข้อมูลลูกค้า (PDPA)'];
+            
+            donutChart = new Chart(donutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: shortDonutLabels,
+                    datasets: [{
+                        data: [45, 35, 20],
+                        backgroundColor: ['#F43F5E', '#F97316', '#2563EB'],
+                        borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '70%', layout: { padding: 10 },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15, font: { family: "'Prompt', sans-serif" } } },
+                        tooltip: {
+                            callbacks: { label: (ctx) => ` ${ctx.parsed}% - ${donutTooltips[ctx.dataIndex]}` }
+                        }
+                    }
+                }
+            });
+        }
+
+        initCharts();
+
+        // --- Form Logic: Dynamic Rows & Submit Code ---
+        let currentSubmitCode = null;
+
+        const rules = {
+            'PDPA': { ret: '10 ปี (รักษาความเป็นส่วนตัว)', act: 'ทำข้อมูลนิรนาม (Anonymization)', color: 'text-blue-700' },
+            'Financial': { ret: '10 ปี (ตามกฎหมายบัญชี/สตง.)', act: 'ย้ายไป Archive (Cold Storage)', color: 'text-amber-700' },
+            'Operational': { ret: 'ตามอายุการใช้งาน (Active + 5 ปี)', act: 'ลบถาวร (Hard Delete) หรือ Archive', color: 'text-emerald-700' },
+            'IT_Logs': { ret: '90 วัน (ตาม พ.ร.บ.คอมฯ)', act: 'ลบถาวร (Auto-Delete)', color: 'text-rose-700' },
+            'Legal': { ret: '10 ปี หรือ เก็บถาวร (Permanent)', act: 'จดหมายเหตุ (Archive)', color: 'text-purple-700' }
+        };
+
+        function generateSubmitCode() {
+            const dateStr = Date.now().toString(36).toUpperCase();
+            const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
+            return `REQ-${dateStr}-${randomStr}`;
+        }
+
+        function addTableRow(data = null) {
+            const container = document.getElementById('tableContainer');
+            const template = document.getElementById('tableRowTemplate');
+            const clone = template.content.cloneNode(true);
+            const row = clone.querySelector('.table-row');
+
+            if (data) {
+                row.querySelector('[name="tableName"]').value = data.tableName || '';
+                row.querySelector('[name="tableSize"]').value = data.size || '';
+                row.querySelector('[name="purpose"]').value = data.purpose || '';
+                const select = row.querySelector('[name="category"]');
+                select.value = data.category || '';
+                handleCategoryChange(select);
+            }
+
+            container.appendChild(clone);
+        }
+
+        function removeTableRow(btn) {
+            const rows = document.querySelectorAll('.table-row');
+            if (rows.length > 1) {
+                btn.closest('.table-row').remove();
+            } else {
+                alert('ต้องมีอย่างน้อย 1 ตารางครับ');
+            }
+        }
+
+        function handleCategoryChange(select) {
+            const row = select.closest('.table-row');
+            const retInput = row.querySelector('[name="retention"]');
+            const actInput = row.querySelector('[name="action"]');
+            const val = select.value;
+
+            retInput.className = 'text-xs font-bold w-full outline-none';
+            actInput.className = 'text-xs font-bold w-full outline-none';
+
+            if (rules[val]) {
+                retInput.value = rules[val].ret;
+                actInput.value = rules[val].act;
+                retInput.classList.add(rules[val].color);
+                actInput.classList.add(rules[val].color);
+            } else {
+                retInput.value = '';
+                actInput.value = '';
+            }
+        }
+
+        // Initialize with one row
+        addTableRow();
+
+        // ----------------------------------------------------------------------
+        // 🔴🔴🔴 นำ URL ของ GOOGLE APPS SCRIPT มาใส่ในเครื่องหมายคำพูดด้านล่างนี้ 🔴🔴🔴
+        // ----------------------------------------------------------------------
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwE43cP-eSP36-Q7D5nqTWAWolBK1CEsngdBBE98snbTzuwu5E3CIomKz-zNJe8ZYCrg/exec';
+        // ----------------------------------------------------------------------
+
+        async function recallData() {
+            const code = document.getElementById('recallCode').value.trim();
+            if (!code) return alert('กรุณากรอก Submit Code');
+
+            const btn = document.getElementById('recallBtn');
+            btn.disabled = true;
+            btn.innerText = '⏳ กำลังโหลด...';
+
+            try {
+                // Fetch with code parameter
+                const response = await fetch(`${SCRIPT_URL}?code=${code}`);
+                const data = await response.json();
+
+                if (data.status === 'success' && data.data.length > 0) {
+                    // Populate Master Data
+                    const master = data.data[0];
+                    document.getElementById('sysName').value = master.sysName;
+                    document.getElementById('dataOwner').value = master.owner;
+                    document.getElementById('approver').value = master.approver;
+
+                    // Clear and Populate Detail Rows
+                    const container = document.getElementById('tableContainer');
+                    container.innerHTML = '';
+                    data.data.forEach(item => addTableRow(item));
+
+                    // Set current code
+                    currentSubmitCode = code;
+                    document.getElementById('submitCodeDisplay').classList.remove('hidden');
+                    document.getElementById('currentCode').innerText = code;
+                    
+                    showFormAlert('✅ โหลดข้อมูลสำเร็จ', `รหัสอ้างอิง: ${code}`, 'bg-emerald-100', 'text-emerald-800');
+                } else {
+                    alert('ไม่พบข้อมูลสำหรับรหัสนี้ครับ');
+                }
+            } catch (error) {
+                console.error('Recall error:', error);
+                alert('เกิดข้อผิดพลาดในการดึงข้อมูล กรุณาตรวจสอบ SCRIPT_URL หรือการตั้งค่า CORS');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'โหลดข้อมูล';
+            }
+        }
+
+        function showFormAlert(title, desc, bgColor, textColor) {
+            const alertBox = document.getElementById('formAlert');
+            alertBox.className = `mb-6 p-4 rounded-lg flex items-center ${bgColor} ${textColor}`;
+            
+            // Determine the icon and remove it from the text to prevent duplicates
+            let icon = '⚠️';
+            if (title.includes('✅')) icon = '✅';
+            else if (title.includes('❌')) icon = '❌';
+            
+            document.getElementById('alertIcon').textContent = icon;
+            // Remove emoji from title to prevent double icons
+            document.getElementById('alertTitle').textContent = title.replace(/[✅⚠️❌]/g, '').trim();
+            document.getElementById('alertDesc').textContent = desc;
+            
+            alertBox.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        document.getElementById('inventoryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!SCRIPT_URL || SCRIPT_URL.includes('ใส่_URL')) {
+                return showFormAlert('⚠️ ระบบยังไม่เชื่อมต่อ', 'กรุณาใส่ SCRIPT_URL ในโค้ดก่อนครับ', 'bg-rose-100', 'text-rose-800');
+            }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳ กำลังบันทึกข้อมูล...</span>';
+
+            // Generate new code if not editing
+            if (!currentSubmitCode) {
+                currentSubmitCode = generateSubmitCode();
+            }
+
+            const masterData = {
+                sysName: document.getElementById('sysName').value,
+                owner: document.getElementById('dataOwner').value,
+                approver: document.getElementById('approver').value,
+                submitCode: currentSubmitCode
+            };
+
+            const tables = [];
+            document.querySelectorAll('.table-row').forEach(row => {
+                tables.push({
+                    tableName: row.querySelector('[name="tableName"]').value,
+                    size: row.querySelector('[name="tableSize"]').value,
+                    purpose: row.querySelector('[name="purpose"]').value,
+                    category: row.querySelector('[name="category"]').value,
+                    retention: row.querySelector('[name="retention"]').value,
+                    action: row.querySelector('[name="action"]').value
+                });
+            });
+
+            const payload = {
+                master: masterData,
+                tables: tables
+            };
+
+            try {
+                // IMPORTANT: We use 'text/plain' to avoid CORS preflight issues with GAS
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', 
+                    }
+                });
+
+                showFormAlert('✅ บันทึกข้อมูลสำเร็จ!', `รหัสสำหรับแก้ไขคือ: ${currentSubmitCode} (โปรดจดไว้)`, 'bg-emerald-100', 'text-emerald-800');
+                
+                document.getElementById('submitCodeDisplay').classList.remove('hidden');
+                document.getElementById('currentCode').innerText = currentSubmitCode;
+
+                // --- Clear Form Logic ---
+                document.getElementById('sysName').value = '';
+                document.getElementById('dataOwner').value = '';
+                document.getElementById('approver').value = '';
+                document.getElementById('recallCode').value = '';
+                
+                // Clear and reset rows
+                document.getElementById('tableContainer').innerHTML = '';
+                addTableRow();
+                
+                // Reset internal state for next entry
+                currentSubmitCode = null;
+
+            } catch (error) {
+                console.error('Submit error:', error);
+                showFormAlert('❌ เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้: ' + error, 'bg-rose-100', 'text-rose-800');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>💾 บันทึกข้อมูลทั้งหมด (Submit)</span>';
+            }
+        });
+    </script>
+</body>
+</html>
