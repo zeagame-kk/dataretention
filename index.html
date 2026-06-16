@@ -283,14 +283,21 @@
 
                         <!-- ส่วนที่ 2: ข้อมูลตาราง (Detail Data) -->
                         <div class="space-y-4">
-                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-3 gap-2">
                                 <div class="flex items-center space-x-2">
                                     <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">2</span>
                                     <h3 class="font-bold text-slate-800">รายการตารางข้อมูล (Table List)</h3>
                                 </div>
-                                <button type="button" onclick="addTableRow()" class="text-blue-600 hover:text-blue-700 text-sm font-bold flex items-center">
-                                    <span class="text-xl mr-1">+</span> เพิ่มตาราง
-                                </button>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button type="button" onclick="downloadCSVTemplate()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded border border-slate-300 transition">📥 โหลด Template CSV</button>
+                                    <label class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded border border-blue-200 cursor-pointer transition">
+                                        📤 อัปโหลด CSV
+                                        <input type="file" id="csvUpload" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+                                    </label>
+                                    <button type="button" onclick="addTableRow()" class="text-blue-600 hover:text-blue-700 text-sm font-bold flex items-center ml-2">
+                                        <span class="text-xl mr-1">+</span> เพิ่มตาราง
+                                    </button>
+                                </div>
                             </div>
 
                             <div id="tableContainer" class="space-y-4">
@@ -520,6 +527,84 @@
                 retInput.value = '';
                 actInput.value = '';
             }
+        }
+
+        function downloadCSVTemplate() {
+            const headers = "Table Name,Size (GB),Purpose,Category (PDPA/Financial/Operational/IT_Logs/Legal)\n";
+            const sample = "tb_customer,1.5,เก็บข้อมูลลูกค้า,PDPA\n";
+            const bom = "\uFEFF"; // Byte Order Mark for Thai support in Excel
+            const blob = new Blob([bom + headers + sample], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "table_template.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const rows = text.split(/\r?\n/);
+                
+                const container = document.getElementById('tableContainer');
+                const currentRows = container.querySelectorAll('.table-row');
+                
+                // If only 1 empty row, clear it first
+                let isEmpty = false;
+                if (currentRows.length === 1) {
+                    const r = currentRows[0];
+                    if (!r.querySelector('[name="tableName"]').value && !r.querySelector('[name="tableSize"]').value) {
+                        isEmpty = true;
+                    }
+                }
+                if (isEmpty) container.innerHTML = '';
+
+                let addedCount = 0;
+                const validCategories = ['PDPA', 'Financial', 'Operational', 'IT_Logs', 'Legal'];
+
+                for (let i = 1; i < rows.length; i++) { // Skip header
+                    const rowText = rows[i].trim();
+                    if (!rowText) continue;
+
+                    // Split by comma, handling potential quotes if needed (basic split for now)
+                    const cols = rowText.split(',');
+                    if (cols.length >= 4) {
+                        const catRaw = cols[3].trim();
+                        let category = '';
+                        const upperCat = catRaw.toUpperCase();
+
+                        if (upperCat.includes('PDPA')) category = 'PDPA';
+                        else if (upperCat.includes('FINAN')) category = 'Financial';
+                        else if (upperCat.includes('OPER')) category = 'Operational';
+                        else if (upperCat.includes('IT')) category = 'IT_Logs';
+                        else if (upperCat.includes('LEGAL')) category = 'Legal';
+                        else if (validCategories.includes(catRaw)) category = catRaw;
+
+                        addTableRow({
+                            tableName: cols[0].trim(),
+                            size: cols[1].trim(),
+                            purpose: cols[2].trim(),
+                            category: category
+                        });
+                        addedCount++;
+                    }
+                }
+                
+                if (addedCount > 0) {
+                    showFormAlert('✅ อัปโหลด CSV สำเร็จ', `เพิ่มข้อมูลทั้งหมด ${addedCount} ตารางเรียบร้อยแล้ว`, 'bg-emerald-100', 'text-emerald-800');
+                } else {
+                    showFormAlert('⚠️ ไม่พบข้อมูลที่ถูกต้อง', 'กรุณาตรวจสอบรูปแบบไฟล์ CSV และลองใหม่อีกครั้ง', 'bg-amber-100', 'text-amber-800');
+                }
+                event.target.value = ''; // Reset for same file re-upload
+            };
+            reader.readAsText(file);
         }
 
         // Initialize with one row
